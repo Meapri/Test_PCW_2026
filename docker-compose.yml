@@ -41,5 +41,6 @@ services:
     environment:
       DATABASE_URL: postgresql://pipeline_user:pipeline_pass@db:5432/events_db
       EVENT_COUNT: "2000"
+      BASE_TIME: "2026-04-20T00:00:00"
     volumes:
       - ./output:/app/output

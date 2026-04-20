@@ -22,9 +22,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# Output (generated files)
-output/*.png
-output/*.jpg
+# Output (generated files — dashboard.png는 제출 증빙을 위해 추적)
 
 # Test document
 테스트.md

@@ -11,12 +11,22 @@
 구매 전환율은 약 2~5%이나, 데이터 분석 의미를 위해 25%로 설정했습니다.
 """
 
+import os
 import random
+from datetime import datetime, timedelta
 from faker import Faker
 
 fake = Faker()
 Faker.seed(42)
 random.seed(42)
+
+# 기준 시각: 환경변수 BASE_TIME이 있으면 고정, 없으면 현재 시각 사용
+# docker-compose.yml에서 고정값을 설정하여 완전한 재현성을 보장합니다.
+_base_time_str = os.getenv("BASE_TIME")
+BASE_TIME = (
+    datetime.fromisoformat(_base_time_str) if _base_time_str
+    else datetime.now()
+)
 
 # 50명의 유저 풀을 유지하여 유저별 분석이 의미 있게 동작하도록 합니다.
 USER_POOL = list(range(1, 51))
@@ -54,7 +64,8 @@ def generate_events(n: int = 2000) -> list[dict]:
 
         event = {
             "timestamp": fake.date_time_between(
-                start_date="-7d", end_date="now"
+                start_date=BASE_TIME - timedelta(days=7),
+                end_date=BASE_TIME,
             ),
             "user_id": random.choice(USER_POOL),
             "event_type": event_type,

@@ -10,6 +10,17 @@
 
 - **Docker** 및 **Docker Compose** 가 설치되어 있어야 합니다.
 
+```bash
+# macOS (Homebrew)
+brew install --cask docker
+
+# Windows
+# https://docs.docker.com/desktop/install/windows-install/ 에서 Docker Desktop 다운로드
+
+# Ubuntu/Debian
+sudo apt-get update && sudo apt-get install -y docker.io docker-compose-plugin
+```
+
 ### 실행 명령어
 
 ```bash
@@ -17,8 +28,11 @@
 git clone https://github.com/Meapri/Test_PCW_2026.git
 cd Test_PCW_2026
 
-# 2. 파이프라인 실행 (빌드 포함)
-docker compose up --build
+# 2. 파이프라인 실행 (빌드 포함, App 종료 시 전체 스택 자동 정지)
+docker compose up --build --abort-on-container-exit
+
+# 3. 실행 완료 후 정리 (DB 볼륨 삭제)
+docker compose down -v
 ```
 
 > 💡 **실행 결과:** 명령어를 실행하면 PostgreSQL DB가 구동되고, Python App이 자동으로 **이벤트 2,000건 생성 → DB 적재 → 데이터 분석 → 시각화 이미지 생성** 후 종료됩니다.
@@ -40,7 +54,8 @@ Test_PCW_2026/
 │   └── init.sql            # DB 테이블 생성 DDL
 ├── docs/
 │   └── aws-architecture.png # 선택 B: AWS 아키텍처 구성도
-├── output/                  # 실행 결과 차트 저장 위치
+├── output/
+│   └── dashboard.png       # Step 5: 시각화 결과 차트
 ├── docker-compose.yml       # Step 4: Docker 전체 스택 구성
 └── README.md
 ```
@@ -63,7 +78,6 @@ Test_PCW_2026/
 - **purchase 25%**: 실제 전환율(2~5%)보다 높게 설정하여 분석 시 의미 있는 데이터를 확보했습니다.
 - **error 15%**: 에러 비율 모니터링이 파이프라인의 주요 분석 목적 중 하나이므로, 분석 가능한 수준으로 설정했습니다.
 - **50명 유저 풀**: 유저별 집계 분석이 의미 있게 동작하도록 고정된 유저 풀을 유지합니다.
-- **Faker.seed(42)**: 재현 가능한 데이터를 보장하여 동일한 결과를 검증할 수 있습니다.
 
 ---
 
@@ -141,7 +155,7 @@ LIMIT 10;
 
 파이프라인 실행 후 아래와 같은 대시보드가 `./output/dashboard.png`에 자동 생성됩니다:
 
-*(실행 후 `output/dashboard.png` 이미지가 여기에 생성됩니다)*
+![Event Log Dashboard](output/dashboard.png)
 
 ---
 
@@ -155,6 +169,10 @@ LIMIT 10;
 1. **인프라 레벨**: DB 컨테이너에 `healthcheck` (`pg_isready`)를 설정하고, App 컨테이너가 `service_healthy` 상태를 기다리게 (`depends_on`) 하여 순서를 보장했습니다.
 2. **앱 레벨**: Python 코드 내부에도 DB 연결 재시도 로직(최대 10회, 2초 간격)을 구현하여, 인프라가 예상과 다르게 동작하는 경우에도 안정적으로 연결됩니다.
 
+### 재실행 멱등성 보장
+
+파이프라인 시작 시 기존 데이터를 `TRUNCATE`로 초기화한 뒤 새 데이터를 적재합니다. 따라서 같은 DB 상태에서 여러 번 실행하더라도 항상 정확히 2,000건만 존재하며, 데이터가 누적되지 않습니다.
+
 ### 하드코딩 방지
 
 DB 접속 정보를 코드에 명시하지 않고, Docker 환경변수(`DATABASE_URL`)를 통해 주입받도록 구성하여 **보안과 이식성**을 고려했습니다. 이벤트 생성 건수(`EVENT_COUNT`)도 환경변수로 조절 가능합니다.
@@ -165,7 +183,7 @@ DB 접속 정보를 코드에 명시하지 않고, Docker 환경변수(`DATABASE
 
 ### 데이터 재현성
 
-`Faker.seed(42)`와 `random.seed(42)`를 고정하여, 동일한 조건에서 실행하면 항상 같은 데이터가 생성됩니다. 이를 통해 분석 결과의 일관성을 보장하고, 디버깅이 용이합니다.
+`Faker.seed(42)`와 `random.seed(42)`를 고정하고, 기준 시각(`BASE_TIME`)을 환경변수로 고정하여 **완전히 동일한 데이터를 재현**할 수 있습니다. `docker-compose.yml`에 `BASE_TIME: "2026-04-20T00:00:00"`이 설정되어 있어, 언제 실행해도 같은 결과가 나옵니다.
 
 ---
 

@@ -47,6 +47,14 @@ def get_connection(max_retries: int = 10, delay: int = 2):
             time.sleep(delay)
 
 
+def truncate_events(conn):
+    """기존 이벤트 데이터를 초기화합니다 (재실행 시 중복 방지)."""
+    with conn.cursor() as cur:
+        cur.execute("TRUNCATE TABLE events;")
+    conn.commit()
+    print("🗑️  기존 이벤트 데이터 초기화 완료")
+
+
 def insert_events(conn, events: list[dict]):
     """
     이벤트 목록을 events 테이블에 배치 삽입합니다.

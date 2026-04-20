@@ -13,7 +13,7 @@ docker compose up 시 자동으로 실행됩니다.
 import os
 
 from generator import generate_events
-from db import get_connection, insert_events
+from db import get_connection, insert_events, truncate_events
 from analyzer import run_analyses
 from visualizer import create_dashboard
 
@@ -34,6 +34,7 @@ def main():
     # ── Step 2: DB 연결 및 적재 ──
     print("\n📌 [Step 2] DB 연결 및 데이터 적재 중...")
     conn = get_connection()
+    truncate_events(conn)
     insert_events(conn, events)
 
     # ── Step 3 & 5: 분석 및 시각화 ──
