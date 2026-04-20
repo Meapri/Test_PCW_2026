@@ -14,7 +14,7 @@
 
 ```bash
 # 1. 레포지토리 클론
-git clone https://github.com/[username]/Test_PCW_2026.git
+git clone https://github.com/Mepari/Test_PCW_2026.git
 cd Test_PCW_2026
 
 # 2. 파이프라인 실행 (빌드 포함)
